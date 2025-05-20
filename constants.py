@@ -1,7 +1,7 @@
 # /usr/bin/env python3
 
 
-# length of data types
+# byte length of data types
 # INT and UINT have the same size, but differ in functionality
 class Types:
     INT8 = UINT8 = 1
@@ -11,6 +11,7 @@ class Types:
 
 
 # variables ending with _LEN define a length
+# lengths are in bytes
 # other variables are generally hardcoded Chromatix default values
 class Chromatix:
     # Constants as defined in Chromatix Data Access Design document
@@ -60,18 +61,19 @@ class Chromatix:
 
 # Added, not from Chromatix
 class Sensormodule:
-    EOF_OFFSET_LEN = 4  # UINT32
-    MAJOR_LEN = 2  # UINT16
-    MINOR_LEN = 2  # UINT16
-    PATCH_LEN = 4  # UINT32
-    COMPRESSED_LEN = 4  # UINT32
+    EOF_OFFSET_LEN = Types.UINT32  # UINT32
+    MAJOR_LEN = Types.UINT16  # UINT16
+    MINOR_LEN = Types.UINT16  # UINT16
+    PATCH_LEN = Types.UINT32  # UINT32
+    COMPRESSED_LEN = Types.UINT32  # UINT32
+    CRC32_LEN = Types.UINT32
 
     HEADER_LEN = (
         Chromatix.TAG_LEN
         + Types.UINT32  # EOF_OFFSET_LEN
-        + Types.UINT16  # MAJOR
-        + Types.UINT16  # MINOR
-        + Types.UINT32  # PATCH
+        + MAJOR_LEN  # MAJOR
+        + MINOR_LEN  # MINOR
+        + PATCH_LEN  # PATCH
         + Chromatix.TOOL_LEN
         + Chromatix.BINARY_TAG_LEN
         + Types.UINT64  # unmapped
@@ -81,13 +83,21 @@ class Sensormodule:
 
     hsLength = HEADER_LEN + Chromatix.MAX_SECTIONS * Chromatix.SECTION_SIZE + 100
 
+    # length of text like:
+    # sensorDriverData cameraModuleData flashDriverData actuatorDriver OISDriver EEPROMDriverData PDConfigData
+    # if text length < 16 then rest is padded with 0's to match length of 16
+    headerText = 4 * Types.UINT32
+    # header text has a spacing of 40 bytes in between them filled with data
+    # 4 bytes in front of the text has current module index
+    headerTextSpacing = 10 * Types.UINT32
+
 
 class Decompressor:
     TAG = 0x43544251  # UINT32 # String: QBTC
     TAG_POS = 0  # UINT32
-    TAG_LEN = 4  # UINT32
+    TAG_LEN = Types.UINT32  # UINT32
     NUM_BITS_POS = TAG_POS + TAG_LEN  # UINT32
-    NUM_BITS_LEN = 4  # UINT32
+    NUM_BITS_LEN = Types.UINT32  # UINT32
     FREQUENCY_POS = NUM_BITS_POS + NUM_BITS_LEN  # UINT32
     FREQUENCY_SIZE = 4  # UINT32
     FREQUENCY_COUNT = 256  # UINT32
