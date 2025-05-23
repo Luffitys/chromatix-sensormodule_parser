@@ -11,6 +11,10 @@ def byte_to_utf8(byte_sequence):
     return byte_sequence.decode("utf-8").strip("\x00")
 
 
+def utf8_to_byte(string):
+    return bytes.fromhex(string)
+
+
 def byte_to_hex_sequence(byte_sequence):
     return byte_sequence.hex().upper()
 
@@ -28,6 +32,9 @@ def compare_crc32(crc32_1, crc32_2):
 
 
 def hex_switch_endian(hex_string):
+    if len(hex_string) % 2 != 0:
+        hex_string = "0" + hex_string
+
     reversed_hex = bytearray.fromhex(hex_string)
     reversed_hex.reverse()
     reversed_hex_string = "".join(format(x, "02x") for x in reversed_hex).upper()

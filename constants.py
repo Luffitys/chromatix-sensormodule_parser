@@ -12,7 +12,6 @@ class Types:
 
 # variables ending with _LEN define a length
 # lengths are in bytes
-# other variables are generally hardcoded Chromatix default values
 class Chromatix:
     # Constants as defined in Chromatix Data Access Design document
     TAG = "QTI Chromatix Header"

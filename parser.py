@@ -2,7 +2,7 @@
 
 import os
 from colorama import init, Fore, Style
-import parse_header
+import parse_header, parse_data
 import helpers
 
 
@@ -27,6 +27,8 @@ def parse(sensormodule):
         f"Revision: {data["revision_major"]}.{data["revision_minor"]}.{data["revision_patch"]}\n"
     )
 
+    print()
+
     # Read sections are in order 5-1, we want it in 1-5
     header_sections.reverse()
     for section in header_sections:
@@ -35,12 +37,23 @@ def parse(sensormodule):
             f"Section Offset: {section["offset"]}\n"
             f"Section Length: {section["length"]}\n"
         )
+
+    print()
     for section in module_sections:
         print(
             f"Module: {section["string"]}\n"
             f"Module Offset: {section["offset"]}\n"
             f"Module Length: {section["length"]}\n"
         )
+
+    print()
+
+    resolutions = parse_data.get_resolutions(sensormodule)
+    for resolution in resolutions:
+        print(f"Resolution: {resolution["resolution_x"]}x{resolution["resolution_y"]}")
+        print(f"Crop Resolution: {resolution["crop_x"]}x{resolution["crop_y"]}")
+        print(f"Mode: {resolution["mode"]}")
+        print(f"Offset: {resolution["offset"]}\n")
 
 
 def parse_start():

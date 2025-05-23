@@ -56,7 +56,7 @@ def read_header_info(sensormodule):
 
 
 def read_header_sections(sensormodule, eof_offset):
-    index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT64))
+    index = helpers.byte_to_int(sensormodule.read(constants.Types.INT64))
     info = {
         5: "Offset to end of header",
         4: "First Block",
@@ -64,19 +64,19 @@ def read_header_sections(sensormodule, eof_offset):
         2: "Third (DEFAULT) Block",
         1: "Last Block (until EOF)",
     }
-    offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+    offset = helpers.byte_to_int(sensormodule.read(constants.Types.INT32))
     sections = [{"info": None, "offset": None, "length": None} for _ in range(index)]
     sections[index - 1]["info"] = info[index]
     sections[index - 1]["offset"] = offset
     sections[index - 1]["length"] = eof_offset
 
     while index > 1:
-        index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+        index = helpers.byte_to_int(sensormodule.read(constants.Types.INT32))
         # index 4 has 4 reserved bytes, skip those
         if index == 4:
-            sensormodule.seek(sensormodule.tell() + constants.Types.UINT32)
-        offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-        length = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+            sensormodule.seek(sensormodule.tell() + constants.Types.INT32)
+        offset = helpers.byte_to_int(sensormodule.read(constants.Types.INT32))
+        length = helpers.byte_to_int(sensormodule.read(constants.Types.INT32))
         # Only fill info, if binary structure has exactly 5 sections
         if len(sections) == 5:
             sections[index - 1]["info"] = info[index]
@@ -93,12 +93,12 @@ def read_module_sections(sensormodule):
     # chromatix has 7 modules
     index = 1
     while index < 7:
-        index = read_int(constants.Types.UINT32)
+        index = read_int(constants.Types.INT32)
         sections[index - 1]["string"] = read_utf8(16)
         sensormodule.seek(sensormodule.tell() + 28)
-        sections[index - 1]["offset"] = read_int(constants.Types.UINT32)
-        sections[index - 1]["length"] = read_int(constants.Types.UINT32)
+        sections[index - 1]["offset"] = read_int(constants.Types.INT32)
+        sections[index - 1]["length"] = read_int(constants.Types.INT32)
         sensormodule.seek(
-            sensormodule.tell() + constants.Types.UINT32
+            sensormodule.tell() + constants.Types.INT32
         )  # skip index duplicate
     return sections
