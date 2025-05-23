@@ -88,11 +88,16 @@ def read_header_sections(sensormodule, eof_offset):
 def read_module_sections(sensormodule):
     read_utf8 = lambda length: helpers.byte_to_utf8(sensormodule.read(length))
     read_int = lambda length: helpers.byte_to_int(sensormodule.read(length))
-    sections = [{"string": None, "offset": None, "length": None} for _ in range(7)]
 
-    # chromatix has 7 modules
+    data = helpers.read_cursor(sensormodule, 1024, initial_pos=0, end_pos=sensormodule.tell())
+    if "OISDriver".encode() in data:
+        iterations = 7
+    else:
+        iterations = 6
+    sections = [{"string": None, "offset": None, "length": None} for _ in range(iterations)]
+
     index = 1
-    while index < 7:
+    while index < iterations:
         index = read_int(constants.Types.INT32)
         sections[index - 1]["string"] = read_utf8(16)
         sensormodule.seek(sensormodule.tell() + 28)

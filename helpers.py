@@ -1,6 +1,7 @@
 # /usr/bin/env python3
 
 import zlib
+from colorama import Fore, Style
 
 
 def byte_to_int(byte_sequence):
@@ -40,6 +41,12 @@ def hex_switch_endian(hex_string):
     reversed_hex_string = "".join(format(x, "02x") for x in reversed_hex).upper()
     return reversed_hex_string
 
+def print_format_color(string, color):
+    if color == "green":
+        string = Fore.GREEN + string + Style.RESET_ALL
+    if color == "red":
+        string = Fore.RED + string + Style.RESET_ALL
+    return string
 
 def read_cursor(buffer, length, initial_pos=None, end_pos=None):
     pos = buffer.tell()

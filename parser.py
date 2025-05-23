@@ -1,7 +1,7 @@
 # /usr/bin/env python3
 
 import os
-from colorama import init, Fore, Style
+from colorama import init
 import parse_header, parse_data
 import helpers
 
@@ -12,9 +12,11 @@ def parse(sensormodule):
     )
 
     if helpers.compare_crc32(data["crc32"], data["crc32_calculated"]):
-        crc32_str = Fore.GREEN + "CRC32 match!" + Style.RESET_ALL
+        crc32_str = helpers.print_format_color("CRC32 match!", "green")
     else:
-        crc32_str = Fore.RED + "CRC32 mismatch!" + Style.RESET_ALL
+        crc32_str = helpers.print_format_color("CRC32 mismatch!", "red")
+
+    print(helpers.print_format_color("::::::::::HEADER INFO::::::::::", "green"))
 
     print(
         f"Tag: {data["tag"]}\n"
@@ -29,6 +31,8 @@ def parse(sensormodule):
 
     print()
 
+    print(helpers.print_format_color("::::::::::SECTION INFO::::::::::", "green"))
+
     # Read sections are in order 5-1, we want it in 1-5
     header_sections.reverse()
     for section in header_sections:
@@ -37,6 +41,8 @@ def parse(sensormodule):
             f"Section Offset: {section["offset"]}\n"
             f"Section Length: {section["length"]}\n"
         )
+
+    print(helpers.print_format_color("::::::::::MODULE INFO::::::::::", "green"))
 
     print()
     for section in module_sections:
@@ -47,6 +53,8 @@ def parse(sensormodule):
         )
 
     print()
+
+    print(helpers.print_format_color("::::::::::RESOLUTION INFO::::::::::", "green"))
 
     resolutions = parse_data.get_resolutions(sensormodule)
     for resolution in resolutions:
