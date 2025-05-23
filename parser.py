@@ -1,72 +1,40 @@
 # /usr/bin/env python3
 
 import os
+from colorama import init, Fore, Style
 import parse_header
+import helpers
 
 
 def parse(sensormodule):
-    (
-        tag,
-        eof_offset,
-        crc32,
-        calculated_crc32,
-        major,
-        minor,
-        patch,
-        tool,
-        binary,
-    ) = parse_header.read_header_info(sensormodule)
-    if crc32 == calculated_crc32:
-        crc32_str = "Calculated CRC32 matches the Binary CRC32"
+    (data, sections) = parse_header.read_header_info(sensormodule)
+
+    if helpers.compare_crc32(data["crc32"], data["crc32_calculated"]):
+        crc32_str = Fore.GREEN + "CRC32 match!" + Style.RESET_ALL
     else:
-        crc32_str = "Calculated CRC32 does not match the Binary CRC32. The file has probably been modified!"
+        crc32_str = Fore.RED + "CRC32 mismatch!" + Style.RESET_ALL
+
     print(
-        f"Tag: {tag}\n"
-        f"EOF Offset: {eof_offset}\n"
-        f"Binary CRC32: {crc32}\n"
-        f"Calculated CRC32: {calculated_crc32}\n"
+        f"Tag: {data["tag"]}\n"
+        f"Tool: {data["tool"]}\n"
+        f"Binary: {data["binary"]}\n"
+        f"Binary CRC32: {data["crc32"]}\n"
+        f"Calculated CRC32: {data["crc32_calculated"]}\n"
         f"{crc32_str}\n"
-        f"Major: {major}\n"
-        f"Minor: {minor}\n"
-        f"Patch: {patch}\n"
-        f"Tool: {tool}\n"
-        f"Binary: {binary}\n"
+        f"EOF Offset: {data["eof_offset"]}\n"
+        f"Revision Major: {data["revision_major"]}\n"
+        f"Revision Minor: {data["revision_minor"]}\n"
+        f"Revision Patch: {data["revision_patch"]}\n"
     )
-    (
-        index_of_curr_section1,
-        header_end_offset,
-        index_of_curr_section2,
-        reserved1_bytes,
-        offset_to_module1,
-        length_of_module1,
-        index_of_curr_section3,
-        offset_to_module2,
-        length_of_module2,
-        index_of_curr_section4,
-        offset_to_module3,
-        length_of_module3,
-        index_of_curr_section5,
-        offset_to_module4,
-        length_of_module4,
-    ) = parse_header.read_header_data(sensormodule)
-    print("TODO: read first section index int, then loop until index = 1\n")
-    print(
-        f"index of current section: {index_of_curr_section1}\n"
-        f"offset of current module: {header_end_offset} # end of header\n\n"
-        f"index of current section: {index_of_curr_section2}\n"
-        f"bytes_reserved: {reserved1_bytes}\n"
-        f"offset to module: {offset_to_module1} # first block (list of all offsets)\n"
-        f"byte_length of module: {length_of_module1}\n\n"
-        f"index of current section: {index_of_curr_section3}\n"
-        f"offset of current module: {offset_to_module2} # second block\n"
-        f"byte_length of module: {length_of_module2}\n\n"
-        f"index of current section: {index_of_curr_section4}\n"
-        f"offset of current module: {offset_to_module3} # DEFAULT block\n"
-        f"byte_length of module: {length_of_module3}\n\n"
-        f"index of current section: {index_of_curr_section5}\n"
-        f"offset of current module: {offset_to_module4} # EOF\n"
-        f"byte_length of module: {length_of_module4}\n\n"
-    )
+
+    # Read sections are in order 5-1, we want it in 1-5
+    sections.reverse()
+    for section in sections:
+        print(
+            f"Section Info: {section["info"]}\n"
+            f"Section Offset: {section["offset"]}\n"
+            f"Section Length: {section["length"]}\n"
+        )
 
 
 def parse_start():
@@ -83,4 +51,5 @@ def parse_start():
 
 
 if __name__ == "__main__":
+    init()
     parse_start()

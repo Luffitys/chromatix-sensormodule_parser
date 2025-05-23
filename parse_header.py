@@ -23,73 +23,63 @@ def calculate_crc32(sensormodule, eof_offset):
 
 
 def read_header_info(sensormodule):
-    tag = helpers.byte_to_utf8(sensormodule.read(constants.Chromatix.TAG_LEN))
-    eof_offset = helpers.byte_to_int(
-        sensormodule.read(constants.Sensormodule.EOF_OFFSET_LEN)
-    )
+    read_utf8 = lambda length: helpers.byte_to_utf8(sensormodule.read(length))
+    read_int = lambda length: helpers.byte_to_int(sensormodule.read(length))
 
-    crc32 = read_crc32(sensormodule, eof_offset)
-    calculated_crc32 = calculate_crc32(sensormodule, eof_offset)
+    data = {}
 
-    major = helpers.byte_to_int(sensormodule.read(constants.Sensormodule.MAJOR_LEN))
-    minor = helpers.byte_to_int(sensormodule.read(constants.Sensormodule.MINOR_LEN))
-    patch = helpers.byte_to_int(sensormodule.read(constants.Sensormodule.PATCH_LEN))
-    tool = helpers.byte_to_utf8(sensormodule.read(constants.Chromatix.TOOL_LEN))
-    binary = helpers.byte_to_utf8(sensormodule.read(constants.Chromatix.BINARY_TAG_LEN))
+    data["tag"] = read_utf8(constants.Chromatix.TAG_LEN)
 
-    if major != 5:
+    data["eof_offset"] = read_int(constants.Sensormodule.EOF_OFFSET_LEN)
+    eof_offset = data["eof_offset"]
+
+    data["crc32"] = read_crc32(sensormodule, eof_offset)
+    data["crc32_calculated"] = calculate_crc32(sensormodule, eof_offset)
+
+    data["revision_major"] = read_int(constants.Sensormodule.MAJOR_LEN)
+    data["revision_minor"] = read_int(constants.Sensormodule.MINOR_LEN)
+    data["revision_patch"] = read_int(constants.Sensormodule.PATCH_LEN)
+
+    data["tool"] = read_utf8(constants.Chromatix.TOOL_LEN)
+    data["binary"] = read_utf8(constants.Chromatix.BINARY_TAG_LEN)
+
+    if data["revision_major"] != 5:
         print("Only Chromatix Major Version 5 is supported.")
-        print(f"Chromatix Major Version {major} is not supported! Aborting..")
+        print(
+            f"Chromatix Major Version {data['revision_major']} is not supported! Aborting.."
+        )
         sys.exit()
-    return tag, eof_offset, crc32, calculated_crc32, major, minor, patch, tool, binary
+
+    sections = read_header_data(sensormodule, data["eof_offset"])
+    return data, sections
 
 
-def read_header_data(sensormodule):
-    index_of_curr_section1 = helpers.byte_to_int(
-        sensormodule.read(constants.Types.UINT64)
-    )
-    header_end_offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+def read_header_data(sensormodule, eof_offset):
+    index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT64))
+    info = {
+        5: "Offset to end of header",
+        4: "First Block",
+        3: "Second Block",
+        2: "Third (DEFAULT) Block",
+        1: "Fourth Block (until EOF)",
+    }
+    offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+    sections = [{"info": None, "offset": None, "length": None} for _ in range(index)]
+    sections[index - 1]["info"] = info[index]
+    sections[index - 1]["offset"] = offset
+    sections[index - 1]["length"] = eof_offset
 
-    # theory
-    index_of_curr_section2 = helpers.byte_to_int(
-        sensormodule.read(constants.Types.UINT32)
-    )
-    reserved1_bytes = helpers.byte_length(sensormodule.read(constants.Types.UINT32))
-    offset_to_module1 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-    length_of_module1 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-
-    index_of_curr_section3 = helpers.byte_to_int(
-        sensormodule.read(constants.Types.UINT32)
-    )
-    offset_to_module2 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-    length_of_module2 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-
-    index_of_curr_section4 = helpers.byte_to_int(
-        sensormodule.read(constants.Types.UINT32)
-    )
-    offset_to_module3 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-    length_of_module3 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-
-    index_of_curr_section5 = helpers.byte_to_int(
-        sensormodule.read(constants.Types.UINT32)
-    )
-    offset_to_module4 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-    length_of_module4 = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
-
-    return (
-        index_of_curr_section1,
-        header_end_offset,
-        index_of_curr_section2,
-        reserved1_bytes,
-        offset_to_module1,
-        length_of_module1,
-        index_of_curr_section3,
-        offset_to_module2,
-        length_of_module2,
-        index_of_curr_section4,
-        offset_to_module3,
-        length_of_module3,
-        index_of_curr_section5,
-        offset_to_module4,
-        length_of_module4,
-    )
+    while index > 1:
+        index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+        if index == 4:
+            sensormodule.seek(
+                sensormodule.tell() + constants.Types.UINT32
+            )  # index 4 has 4 reserved bytes, skip those
+        offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+        length = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+        # Only fill info, if binary structure has exactly 5 sections
+        if len(sections) == 5:
+            sections[index - 1]["info"] = info[index]
+        sections[index - 1]["offset"] = offset
+        sections[index - 1]["length"] = length
+    return sections
