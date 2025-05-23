@@ -50,18 +50,19 @@ def read_header_info(sensormodule):
         )
         sys.exit()
 
-    sections = read_header_data(sensormodule, data["eof_offset"])
-    return data, sections
+    header_sections = read_header_sections(sensormodule, data["eof_offset"])
+    module_sections = read_module_sections(sensormodule)
+    return data, header_sections, module_sections
 
 
-def read_header_data(sensormodule, eof_offset):
+def read_header_sections(sensormodule, eof_offset):
     index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT64))
     info = {
         5: "Offset to end of header",
         4: "First Block",
         3: "Second Block",
         2: "Third (DEFAULT) Block",
-        1: "Fourth Block (until EOF)",
+        1: "Last Block (until EOF)",
     }
     offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
     sections = [{"info": None, "offset": None, "length": None} for _ in range(index)]
@@ -71,10 +72,9 @@ def read_header_data(sensormodule, eof_offset):
 
     while index > 1:
         index = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
+        # index 4 has 4 reserved bytes, skip those
         if index == 4:
-            sensormodule.seek(
-                sensormodule.tell() + constants.Types.UINT32
-            )  # index 4 has 4 reserved bytes, skip those
+            sensormodule.seek(sensormodule.tell() + constants.Types.UINT32)
         offset = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
         length = helpers.byte_to_int(sensormodule.read(constants.Types.UINT32))
         # Only fill info, if binary structure has exactly 5 sections
@@ -82,4 +82,23 @@ def read_header_data(sensormodule, eof_offset):
             sections[index - 1]["info"] = info[index]
         sections[index - 1]["offset"] = offset
         sections[index - 1]["length"] = length
+    return sections
+
+
+def read_module_sections(sensormodule):
+    read_utf8 = lambda length: helpers.byte_to_utf8(sensormodule.read(length))
+    read_int = lambda length: helpers.byte_to_int(sensormodule.read(length))
+    sections = [{"string": None, "offset": None, "length": None} for _ in range(7)]
+
+    # chromatix has 7 modules
+    index = 1
+    while index < 7:
+        index = read_int(constants.Types.UINT32)
+        sections[index - 1]["string"] = read_utf8(16)
+        sensormodule.seek(sensormodule.tell() + 28)
+        sections[index - 1]["offset"] = read_int(constants.Types.UINT32)
+        sections[index - 1]["length"] = read_int(constants.Types.UINT32)
+        sensormodule.seek(
+            sensormodule.tell() + constants.Types.UINT32
+        )  # skip index duplicate
     return sections

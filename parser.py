@@ -7,7 +7,9 @@ import helpers
 
 
 def parse(sensormodule):
-    (data, sections) = parse_header.read_header_info(sensormodule)
+    (data, header_sections, module_sections) = parse_header.read_header_info(
+        sensormodule
+    )
 
     if helpers.compare_crc32(data["crc32"], data["crc32_calculated"]):
         crc32_str = Fore.GREEN + "CRC32 match!" + Style.RESET_ALL
@@ -22,18 +24,22 @@ def parse(sensormodule):
         f"Calculated CRC32: {data["crc32_calculated"]}\n"
         f"{crc32_str}\n"
         f"EOF Offset: {data["eof_offset"]}\n"
-        f"Revision Major: {data["revision_major"]}\n"
-        f"Revision Minor: {data["revision_minor"]}\n"
-        f"Revision Patch: {data["revision_patch"]}\n"
+        f"Revision: {data["revision_major"]}.{data["revision_minor"]}.{data["revision_patch"]}\n"
     )
 
     # Read sections are in order 5-1, we want it in 1-5
-    sections.reverse()
-    for section in sections:
+    header_sections.reverse()
+    for section in header_sections:
         print(
             f"Section Info: {section["info"]}\n"
             f"Section Offset: {section["offset"]}\n"
             f"Section Length: {section["length"]}\n"
+        )
+    for section in module_sections:
+        print(
+            f"Module: {section["string"]}\n"
+            f"Module Offset: {section["offset"]}\n"
+            f"Module Length: {section["length"]}\n"
         )
 
 
