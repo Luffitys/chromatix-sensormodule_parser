@@ -89,12 +89,16 @@ def read_module_sections(sensormodule):
     read_utf8 = lambda length: helpers.byte_to_utf8(sensormodule.read(length))
     read_int = lambda length: helpers.byte_to_int(sensormodule.read(length))
 
-    data = helpers.read_cursor(sensormodule, 1024, initial_pos=0, end_pos=sensormodule.tell())
+    data = helpers.read_cursor(
+        sensormodule, 1023, initial_pos=0, end_pos=sensormodule.tell()
+    )
     if "OISDriver".encode() in data:
         iterations = 7
     else:
         iterations = 6
-    sections = [{"string": None, "offset": None, "length": None} for _ in range(iterations)]
+    sections = [
+        {"string": None, "offset": None, "length": None} for _ in range(iterations)
+    ]
 
     index = 1
     while index < iterations:

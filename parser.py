@@ -56,12 +56,21 @@ def parse(sensormodule):
 
     print(helpers.print_format_color("::::::::::RESOLUTION INFO::::::::::", "green"))
 
-    resolutions = parse_data.get_resolutions(sensormodule)
+    resolutions, is_ignore = parse_data.get_resolutions(sensormodule)
+    resolutions
+    i = len(resolutions) - 1
     for resolution in resolutions:
-        print(f"Resolution: {resolution["resolution_x"]}x{resolution["resolution_y"]}")
-        print(f"Crop Resolution: {resolution["crop_x"]}x{resolution["crop_y"]}")
-        print(f"Mode: {resolution["mode"]}")
-        print(f"Offset: {resolution["offset"]}\n")
+        if not is_ignore[i]["ignore"]:
+            print(
+                f"Resolution: {resolution["resolution_x"]}x{resolution["resolution_y"]}"
+            )
+            print(f"Crop Resolution: {resolution["crop_x"]}x{resolution["crop_y"]}")
+            print(f"Mode: {resolution["mode"]}")
+            print(f"Offset: {resolution["offset"]}\n")
+        i -= 1
+    res_data = parse_data.get_resolution_data(sensormodule, resolutions)
+    for data in res_data:
+        print(data)
 
 
 def parse_start():
