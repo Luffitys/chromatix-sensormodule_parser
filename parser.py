@@ -67,7 +67,11 @@ def parse(sensormodule):
             )
             print(f"Crop Resolution: {resolution["crop_x"]}x{resolution["crop_y"]}")
             print(f"Mode: {resolution["mode"]}")
-            print(f"Offset: {resolution["offset"]}\n")
+            print(f"isInherited: {resolution["isInherited"]}")
+            print(f"sHDR: {resolution["sHDR"]}")
+            print(f"Offset: {resolution["offset"]}")
+            print(f"hasPDAF: {resolution["hasPDAF"]}")
+            print(f"slaveAddr: {resolution["slaveAddr"]}\n")
         i -= 1
     res_data = parse_data.get_resolution_data(sensormodule, resolutions)
     for data in res_data:
