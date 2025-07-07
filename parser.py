@@ -7,8 +7,8 @@ import helpers
 
 
 def parse(sensormodule):
-    (data, header_sections, module_sections) = parse_header.read_header_info(
-        sensormodule
+    (data, header_sections, module_sections, global_offset) = (
+        parse_header.read_header_info(sensormodule)
     )
 
     if helpers.compare_crc32(data["crc32"], data["crc32_calculated"]):
@@ -27,6 +27,7 @@ def parse(sensormodule):
         f"{crc32_str}\n"
         f"EOF Offset: {data["eof_offset"]}\n"
         f"Revision: {data["revision_major"]}.{data["revision_minor"]}.{data["revision_patch"]}\n"
+        f"Global Offset: {global_offset}\n"
     )
 
     print()

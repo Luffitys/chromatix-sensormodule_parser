@@ -51,8 +51,8 @@ def read_header_info(sensormodule):
         sys.exit()
 
     header_sections = read_header_sections(sensormodule, data["eof_offset"])
-    module_sections = read_module_sections(sensormodule)
-    return data, header_sections, module_sections
+    module_sections, global_offset = read_module_sections(sensormodule)
+    return data, header_sections, module_sections, global_offset
 
 
 def read_header_sections(sensormodule, eof_offset):
@@ -110,4 +110,9 @@ def read_module_sections(sensormodule):
         sensormodule.seek(
             sensormodule.tell() + constants.Types.INT32
         )  # skip index duplicate
-    return sections
+    global_offset = sensormodule.tell()
+    for entry in sections:
+        entry[
+            "offset"
+        ] += global_offset  # Read offsets are don't include the entire length of the header + sections, so add that length
+    return sections, global_offset

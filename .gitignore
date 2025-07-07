@@ -1,2 +1,3 @@
 __pycache__
-*.hbk
+*.bin
+!com.qti.sensormodule.sunny_ov64b40_tele.bin
