@@ -11,6 +11,7 @@ def get_resolutions(sensormodule):
 
     resolution_10bit_bytes = helpers.utf8_to_byte("0A0000000100000000000000")
     resolution_12bit_bytes = helpers.utf8_to_byte("0C0000000100000000000000")
+    shdr_bytes = "0A0000000500000000000000"
     resolution_len = len(resolution_10bit_bytes)
     hits = data.count(resolution_10bit_bytes) + data.count(resolution_12bit_bytes)
     sections = [
@@ -19,7 +20,7 @@ def get_resolutions(sensormodule):
             "resolution_y": None,
             "mode": None,
             "isInherited": "TBD",
-            "sHDR": "TBD",
+            "sHDR": None,
             "offset": None,
             "hasPDAF": False,
             "slaveAddr": None,
@@ -73,7 +74,23 @@ def get_resolutions(sensormodule):
             if buffer == "7004":
                 section["hasPDAF"] = True
 
-    reg_offsets = [56, 72, 132, 148, 172, 176, 188, 208, 216, 248, 352, 456]
+    reg_offsets = [
+        56,
+        72,
+        132,
+        148,
+        172,
+        176,
+        188,
+        208,
+        216,
+        248,
+        352,
+        456,
+        524,
+        820,
+        1192,
+    ]
     for section in sections:
         sensormodule.seek(section["offset"])
         for offset in reg_offsets:
@@ -84,6 +101,11 @@ def get_resolutions(sensormodule):
                 section["slaveAddr"] = helpers.byte_to_hex_sequence(
                     sensormodule.read(4)
                 )
+
+        sensormodule.seek(section["offset"])
+        buffer = helpers.byte_to_hex_sequence(sensormodule.read(216))
+        if shdr_bytes in buffer:
+            section["sHDR"] = True
 
     return sections, is_ignore
 
