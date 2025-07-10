@@ -2,6 +2,7 @@
 
 import os
 from colorama import init
+import argparse
 import parse_header, parse_data
 import helpers
 
@@ -82,15 +83,11 @@ def parse(sensormodule):
 
 
 def parse_start():
-    # filename = input('\nEnter the full file name of your sensormodule .bin\nExample: com.qti.sensormodule.sunny_ov64b40_tele.bin\n------\n: ')
-    # hardcode it for testing purposes
-    filename = "com.qti.sensormodule.sunny_ov64b40_tele.bin"
+    parser = argparse.ArgumentParser(prog="Chromatix v5.0.x Parser")
+    parser.add_argument("filename")
+    args = parser.parse_args()
 
-    if not os.path.exists(filename):
-        print(f"The selected file {filename} doesn't exist. Aborting..")
-        return
-
-    with open(filename, "rb") as sensormodule:
+    with open(args.filename, "rb") as sensormodule:
         parse(sensormodule)
 
 
