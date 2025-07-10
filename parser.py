@@ -1,6 +1,5 @@
 # /usr/bin/env python3
 
-import os
 from colorama import init
 import argparse
 import parse_header, parse_data

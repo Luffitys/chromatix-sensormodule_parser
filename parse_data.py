@@ -9,16 +9,17 @@ def get_resolutions(sensormodule):
     sensormodule.seek(0)
     data = sensormodule.read()
 
-    resolution_bytes = helpers.utf8_to_byte("0A0000000100000000000000")
-    resolution_len = len(resolution_bytes)
-    hits = data.count(resolution_bytes)
+    resolution_10bit_bytes = helpers.utf8_to_byte("0A0000000100000000000000")
+    resolution_12bit_bytes = helpers.utf8_to_byte("0C0000000100000000000000")
+    resolution_len = len(resolution_10bit_bytes)
+    hits = data.count(resolution_10bit_bytes) + data.count(resolution_12bit_bytes)
     sections = [
         {
             "resolution_x": None,
             "resolution_y": None,
             "mode": None,
-            "isInherited": False,
-            "sHDR": False,
+            "isInherited": "TBD",
+            "sHDR": "TBD",
             "offset": None,
             "hasPDAF": False,
             "slaveAddr": None,
@@ -29,7 +30,10 @@ def get_resolutions(sensormodule):
     i = 0
     j = 0
     while i <= len(data) - resolution_len:
-        if data[i : i + resolution_len] == resolution_bytes:
+        if data[i : i + resolution_len] in (
+            resolution_10bit_bytes,
+            resolution_12bit_bytes,
+        ):
             sections[j]["offset"] = i
             j += 1
             i += resolution_len  # Skip ahead by length of pattern (non-overlapping)
@@ -48,6 +52,8 @@ def get_resolutions(sensormodule):
 
         if mode == 43:  # 0x2B
             mode = "10-bit RAW"
+        elif mode == 44:  # 0x2C
+            mode = "12-bit RAW"
         section["mode"] = mode
         is_ignore[iter]["id"] = iter
         iter += 1
