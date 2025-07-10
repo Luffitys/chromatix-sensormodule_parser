@@ -17,12 +17,10 @@ def get_resolutions(sensormodule):
             "resolution_x": None,
             "resolution_y": None,
             "mode": None,
-            "isInherited": None,
-            "sHDR": None,
+            "isInherited": False,
+            "sHDR": False,
             "offset": None,
-            "hasPDAF": None,
-            "shortSection": None,
-            "slaveAddr_offset": None,
+            "hasPDAF": False,
             "slaveAddr": None,
         }
         for _ in range(hits)
@@ -56,70 +54,30 @@ def get_resolutions(sensormodule):
 
     iter = 0
     for section in sections:
-        if section["resolution_y"] < 100:  # Drop useless resolutions
+        if section["resolution_y"] < 100:  # Drop useless resolutions below res_y=100px
             is_ignore[iter]["ignore"] = True
             iter += 1
 
+    pdaf_offsets = [68, 144, 6104]
     for section in sections:
         sensormodule.seek(section["offset"])
-        buffer1 = helpers.byte_to_hex_sequence(sensormodule.read(37))  # PDAF Validation
-        if "0832" in buffer1:
-            section["shortSection"] = False
-        elif "0403" in buffer1:
-            section["shortSection"] = False
-        else:
-            section["shortSection"] = True
-        sensormodule.seek(sensormodule.tell() - 38)
-        buffer2 = helpers.byte_to_hex_sequence(sensormodule.read(84))  # PDAF Validation
-        if "0832" in buffer2:
-            section["hasPDAF"] = False
-        elif "0403" in buffer2:
-            section["hasPDAF"] = False
-        else:
-            section["hasPDAF"] = True
-        sensormodule.seek(sensormodule.tell() - 84)
-        buffer3 = helpers.byte_to_hex_sequence(
-            sensormodule.read(216)
-        )  # PDAF Validation
-        if "A0000000100000000000000" and "A0000000500000000000000" in buffer3:
-            section["sHDR"] = True
-        else:
-            section["sHDR"] = False
-    index = 0
-    for section in sections:
-        sensormodule.seek(section["offset"])
-        if section["hasPDAF"] == True:
-            if (
-                index is not 1
-                and section["shortSection"] == True
-                and section["sHDR"] == False
-            ):  # Index 1 has 4 Bytes more, even if shortSection is True
-                section["slaveAddr_offset"] = (14 * constants.Types.INT32) + (
-                    19 * constants.Types.INT32
-                )
-            elif section["sHDR"] == True:
-                section["slaveAddr_offset"] = (14 * constants.Types.INT32) + (
-                    40 * constants.Types.INT32
-                )
-            else:
-                section["slaveAddr_offset"] = (14 * constants.Types.INT32) + (
-                    23 * constants.Types.INT32
-                )
-        else:
-            section["slaveAddr_offset"] = 14 * constants.Types.INT32
-        sensormodule.seek(sensormodule.tell() + section["slaveAddr_offset"])
-        section["slaveAddr"] = helpers.byte_to_hex_sequence(
-            sensormodule.read(constants.Types.INT32)
-        )
-        index += 1
+        for offset in pdaf_offsets:
+            sensormodule.seek(section["offset"] + offset)
+            buffer = helpers.byte_to_hex_sequence(sensormodule.read(2))
+            if buffer == "7004":
+                section["hasPDAF"] = True
 
+    reg_offsets = [56, 72, 132, 148, 172, 176, 188, 208, 216, 248, 352, 456]
     for section in sections:
-        if "0832" in section["slaveAddr"]:
-            section["isInherited"] = False
-        elif "0403" in section["slaveAddr"]:
-            section["isInherited"] = False
-        else:
-            section["isInherited"] = True
+        sensormodule.seek(section["offset"])
+        for offset in reg_offsets:
+            sensormodule.seek(section["offset"] + offset)
+            buffer = helpers.byte_to_hex_sequence(sensormodule.read(2))
+            if buffer in ("1201", "0832", "0403"):
+                sensormodule.seek(sensormodule.tell() - 6)
+                section["slaveAddr"] = helpers.byte_to_hex_sequence(
+                    sensormodule.read(4)
+                )
 
     return sections, is_ignore
 
